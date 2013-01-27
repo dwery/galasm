@@ -1,0 +1,839 @@
+
+
+
+JEDEC Standard Number 3A
+
+This section defines a format for the transfer of information between a data 
+preparation system and a logic device programmer. JEDEC format provides for, 
+but is not limited to, the transfer of fuse, test, identification, and comment 
+information in an ASCII representation, and defines the "intermediate code" 
+between device programmers and data preparation systems. It does not define 
+device architecture nor does it define programming algorithms or the device 
+specific information for accessing the fuses or cells. 
+
+Note: This section represents a Data I/O-specific implementation 
+      of JEDEC Standard No. 3A. 
+
+The standard includes a transmission protocol based on traditional PROM 
+formats that allow a device programmer to share a computer serial port with a 
+terminal.  The protocol is not a complete communications protocol and does not 
+do retries or error correction.  This protocol is not required if the device 
+programmer has local storage, such as a floppy disk. 
+
+Field programmable logic devices may require more testing than programmable 
+memories, so the standard defines a functional testing format. This test 
+vector format is not a general purpose parametric test language. The following 
+figure shows an example of a PLD Data File. 
+
+<STX> File for PLD 12S8 Created on 8-Feb-85 3:05PM 
+6809 memory decode 123-0017-001 
+Joe Engineer Advanced Logic Corp * 
+QP20* QF448* QV8* 
+F0* X0* 
+L001111101111111111111111111111*
+L281011111111111111111111111111*
+L561110111111111111111111111111*
+L120101011101111011111111111111*
+L240101011110111011111111111111*
+L360101011101110111111111111111*
+V0001000000XXXNXXXHHHLXXN*
+V0002010000XXXNXXXHHHLXXN*
+V0003100000XXXNXXXHHHLXXN*
+V0004110000XXXNXXXHHHLXXN*
+V0005111000XXXNXXXHLHHXXN*
+V0006111010XXXNXXXHHHHXXN*
+V0007111100XXXNXXXHHLHXXN*
+V0008111110XXXNXXXLHHHXXN*
+C124E*<<ETX>>8A76
+
+SUMMARY OF PROGRAMMING AND TESTING FIELDS
+
+The programming and testing information is contained in various fields. To 
+comply with the standard, the device programmer, tester, and development 
+system must provide and recognize certain fields. The following table lists 
+the field identifiers and descriptions. 
+
+Identifier	Description
+
+(n/a)    Design specification
+N        Note
+QF       Number of fuses in device
+QP       Number of pins in test vectors ***
+QV       Maximum number of test vectors ***
+
+F        Default fuse state *
+L        Fuse list *
+C        Fuse checksum
+
+X        Default test condition **
+V        Test vectors **
+P        Pin sequence **
+
+D        Device (obsolete)
+G        Security fuse
+R,S,T    Signature analysis
+A        Access time
+
+*        Programmer must recognize
+**       Tester must recognize
+***      Development system must provide
+
+SPECIAL NOTATIONS AND DEFINITIONS
+
+Notation Conventions
+
+In addition to the descriptions and examples, this appendix uses the Backus-
+Naur Form (BNF) to define the syntax of the data transfer format. BNF is a 
+shorthand notation that follows these rules: 
+
+     "::=" means "is defined as".
+
+     Characters enclosed by single quotes are literals (required).
+
+     Angle brackets enclose identifiers.
+
+     Square brackets enclose optional items.
+
+     Braces (curly brackets) enclose a repeated item. The item 
+     may appear zero or more times.
+
+     Vertical bars indicate a choice between items.
+
+     Repeat counts are given by a :n suffix. For example, a six-digit 
+     number would be defined as "<number>" ::= <digit>:6."
+
+For example, in words, the definition of a person's name reads:
+
+The full name consists of an optional title followed by a first name, a middle 
+name, and a last name. The person may not have a middle name or may have 
+several middle names. The titles consist of: Mr., Mrs., Ms., Miss, and Dr. 
+
+BNF syntax:
+
+     full name>>::=[<<title>>] <<f.name>> {<<m.name>>} <<l.name>>
+
+     <title> ::= 'Mr.' | 'Mrs.' | 'Ms.' | 'Miss' | 'Dr.'<R>
+
+Examples:
+
+     Miss Mary Ann Smith
+     Mr. John Jacob Joseph Jones
+     Tom Anderson
+
+BNF Rules and Definitions
+
+The following standard definitions are used throughout the rest of 
+this appendix:
+
+     <digit> ::=		| '0' | '1' | '2' | '3' | '4'
+                  | '5' | '6' | '7' | '8' | '9'
+
+     <hex-digit> ::= <digit> | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
+     <binary-digit> ::=  '0' | '1'
+
+     <number> :: = <digit> {<digit>}
+
+<del> ::= <space> | <carriage return>
+
+<delimiter> ::= <del> {<del>}
+
+<printable character> ::= <ASCII 20 hex ... 7E hex>
+
+<control character> ::= <ASCII 00 hex ... 1F hex>
+                    |   <ASCII 7F hex>
+
+<STX>               ::= <ASCII 02 hex>
+
+<ETX>               ::= <<ASCII 03 hex>
+
+<carriage return>   ::= <ASCII 0D hex>
+
+<line feed>         ::= <ASCII 0A hex>
+
+<space>             ::= <ASCII 20 hex> | ' '
+
+<valid character>   ::= <printable character>
+                    |   <carriage return> | <line feed>
+
+<field character>   ::= <ASCII 20 hex ... 29 hex>
+                    |   <ASCII 2B hex ... 7E hex>
+                    |   <carriage return> | <line feed>
+
+TRANSMISSION PROTOCOL
+
+Protocol Syntax
+
+This STX-ETX protocol is based on traditional PROM formats that allow a device 
+programmer to share a serial computer port with a terminal. The transmission 
+consists of a start-of-text (STX) character, various fields, and end-of-text 
+(ETX) character, and a transmission checksum. The character set consists of 
+the printable ASCII characters and four control characters (STX, ETX, CR, LF). 
+Other control characters should not be used because they can produce 
+undesirable side-effects in the receiving equipment. 
+
+Syntax of the transmission protocol:
+
+<format> ::= <STX> {<field>} <ETX> <xmit checksum>
+
+Computing the Transmission Checksum
+
+The transmission checksum is the 16 bit sum (that is, modulo 65,535) of all 
+ASCII characters transmitted between and including the STX and ETX.  The 
+parity bit is excluded in the calculation. 
+
+Syntax of the transmission checksum:
+
+<xmit checksum> ::= <hex-digit>:4  
+
+   random text <return><line feed>                             = 0000
+   <STX>TEST*<return><line feed>       02+54+45+53+54+2A+0D+0A = 0183
+   QF0384*<return><line feed>       51+46+30+33+38+34+2A+0D+0A = 01A7
+   F0* <return><line feed>                46+30+2A+20+20+0D+0A = 00F7
+   L10 101*<return><line feed>   4C+31+30+20+31+30+31+2A+0D+0A = 01A0
+   <ETX>05C4 <return> random text                           03 = 0003
+                                                                 ----
+                                                                 05C4
+
+Disabling the Transmission Checksum
+
+Some computer operating systems do not allow the user to control what 
+characters are sent, especially at the end of a line. The receiving equipment 
+should always accept a dummy value of "0000" as a valid checksum. This dummy 
+checksum is a method of disabling the transmission checksum. 
+
+DATA FIELDS
+
+General Field Syntax
+
+In general, each field in the format starts with an identifier, followed by 
+the information, and terminated with an asterisk. For example, "C1234*" 
+specifies that the checksum of the fuse data is 1234. The design specification 
+header does not have an identifier and must be the first field in the 
+transmission, immediately followed by the STX character. 
+
+Syntax of fields:
+
+<field>                ::= [<delimiter>] <field identifier>
+                           {<field character>} '*'
+
+<field identifier>     ::= | 'A' | 'C' | 'D' | 'F' | 'G'
+                           | 'L' | 'N' | 'P' | 'Q' | 'R'
+                           | 'S' | 'T' | 'V' | 'X'
+
+<reserved identifier>  ::= | 'B' | 'E' | 'H' | 'I' | 'J'
+                           | 'K' | 'M' | 'O' | 'U' | 'W'
+                           | 'Y' | 'Z'
+
+Field Identifiers
+
+Each field begins with a single character identifier that identifies the field 
+type. Multiple character identifiers can be used to create subfields (that is, 
+"A1", "A$", or "AB3"). The field is terminated with an asterisk. Therefore, 
+asterisks cannot be embedded within the field. While not required, carriage 
+returns and line feeds should be used to improve the readability of the 
+format. Reserved identifiers currently have no function and are reserved for 
+future use. Receiving equipment should ignore fields starting with reserved 
+identifiers. The meanings of the field identifiers are given in the following 
+table. 
+
+A-   Access Time             N   Note
+B-   *                       O   *
+C-   Checksum                P   Pin sequence
+D-   Device type             Q   Value
+E-   *                       R   Resulting vector
+F-   Default fuse state      S   Starting vector
+G-   Security fuse           T   Test cycles
+H-   *                       U   *
+I    *                       V   Test vector
+J-   *                       W   *
+K-   *                       X   Default test condition
+L-   Fuse list               Y   *
+M-   *                       Z   *
+
+     * Reserved for future use
+
+COMMENT AND DEFINITION FIELDS
+
+Design Specification Field
+
+The design specification is the first field in the format. It must be included 
+and it does not have an identifier to signal its start. An asterisk terminates 
+the field. The contents of the design specification are not defined but should 
+consist of: 
+
+     User's name and company
+
+     Date, part number, and revision
+
+     Manufacturer's device number
+
+     Other information
+
+Syntax of the Design Specification:
+
+<design specification> ::= {<field character>} '*'
+
+For example,
+
+File for PLD 12S8 
+Created on 8-Feb-85 3:05PM 
+6809 memory decode 123-0017-001
+Joe Engineer Advance Logic Corp *
+
+If none of the above information is required, a blank field consisting of the 
+terminating asterisk is a valid design specification. 
+
+Note Field (N)
+
+The note field is used to place notes and comments in the data file. The note 
+field(s) may appear anywhere in the file and the receiving equipment may 
+ignore this field. 
+
+Syntax of the Note Field:
+
+<note> ::= 'N' <field characters> '*'
+
+For example,
+
+N Following vectors were modified for ACME 123 tester*
+
+Device Definition Field (D) (Obsolete)
+
+This field is now obsolete. It has been eliminated to ensure 
+that the format is device and technology independent.
+
+Value Field 
+(QF, QP, QV)
+
+The Q field expresses values or limits which must be provided to the receiving 
+equipment. The following three subfields are defined: 
+
+     The F subfield for the number of fuses
+
+     The P subfield for the number of pins or test conditions in the test 
+     vector 
+
+     The V subfield for the maximum number of test vectors
+
+These values enable the receiving device to efficiently allocate memory and 
+perform certain calculations. The QF field tells the receiving equipment how 
+much memory to reserve for fuse data, the number of fuses to set to the 
+default condition, and the number of fuses to include in the fuse checksum. 
+
+The value fields must occur before any device programming or testing fields in 
+the data file. Files with only testing fields do not require the QF field and 
+files with only programming fields do not require the QP and QV fields. 
+
+Syntax for Value Fields:
+
+   <fuse limit>       := 'QF' <number> '*'
+
+   <number of pins>   ::='QP' <number> '*'
+
+   <vector limit>     ::='QV' <number> '*'
+
+For example,
+
+   QF1024*    (Indicates device has 1024 fuses)
+   QP24*      (Indicates device has 24 pins)
+   QV250*     (Indicates a maximum of 250 test vectors)
+
+DEVICE PROGRAMMING FIELDS
+
+Syntax and Overview
+
+Each fuse or cell of a device is assigned a decimal number and has two 
+possible states: a zero, specifying a low resistance link (a logical 
+connection between two points); or a one, specifying a high resistance link 
+(no logical connection between two points). The fuse numbers start at zero and 
+are consecutive to the maximum fuse number. For example, a device with 2048 
+fuses would have fuse numbers between 0 and 2047. Fuse information describing 
+the state of each fuse in the device is given by three fields. All user 
+programmable fuses or cells may be specified with an L field. There are no 
+separate fields for control terms or architecture fuses. 
+
+Syntax of Fuse Information fields:
+
+   <fuse information>  ::=	[<default state>] <fuse list>
+                 {<fuse list>}   [<fuse checksum>]
+
+   <default state> ::=  'F' <binary-digit> '*'
+
+   <fuse list>     ::=  'L' <number> <delimiter>
+                 {<binary-digit> [<delimiter>} '*'
+
+   <fuse checksum> ::=  'C' <hex-digit>:4 '*'
+
+For example,
+
+F0*
+L0000  01001110  00001000  11110000  11111111  01010001*
+C021A*
+
+Fuse Default States Field (F)
+
+The F field defines the states of fuses that are not explicitly defined in the 
+L fields. If no F field is specified, all fuse states must be defined after 
+the QF field and before the first L field.  For example, 
+
+F0*      (Set default to 0)
+
+Fuse List Field (L)
+
+The L field starts with a decimal fuse number and is followed by a stream of 
+fuse states (0 and 1). The fuse number may include leading zeros (that is, L12 
+and L0012 are the same). A space and/or a carriage return must separate the 
+fuse number from the fuse states. The stream of fuse states can be as long as 
+desired (up to the maximum allowable fuse number). 
+
+If the state for a fuse is specified more than once, the last state replaces 
+all previous states specified for that fuse. This allows a file to be modified 
+or "patched" by appending new fuse states to the file.  Following are three 
+examples: 
+
+L0000
+111110111111111111111111111
+101111111111111111111111111
+111011111111111111111111111
+000000000000000000000000000*
+
+L0000
+11111011111111111111111111110111111111
+1111111111111111
+11101111111
+1111111111111111
+00000000000000000000000000*
+
+L00   111110111111111111111111111*
+L28   101111111111111111111111111*
+L56   111011111111111111111111111*
+L84   000000000000000000000000000*
+
+Fuse Checksum Field
+
+The fuse information checksum field is used to detect transmitting and 
+receiving errors. The checksum is for the entire device (fuse number 0 to the 
+maximum fuse number set by the QF field), not just the fuse states sent. If 
+multiple C fields are received only the last is significant. 
+
+The field contains the 16-bit sum (that is, modulo 65,535) of the 8-bit words 
+containing the fuse states for the entire device. The 8-bit words are formed 
+as shown in this example. 
+
+word  00 |msb|   |   |   |   |   |   |   |
+Fuse No    7   6   5   4   3   2   1   0
+
+word  01 |msb|   |   |   |   |   |   |   |
+Fuse No.  15   14  13  12  11  10  9   8
+
+         - - - - - - - - - - - - -  - - - -
+
+word  62 |msb|   |   |   |   |   |   |lsb|
+Fuse No.   -   -   -   -  499 498 497 496
+
+The computation of the fuse checksum is as shown in the following example.
+
+QF500*
+F0* L0000 01001110 00001000 11110000 11111111 01010001*
+C021A*
+
+Fuse
+Number MSB           LSB 
+0000    0 1 1 1 0 0 1 0    72
+0008    0 0 0 1 0 0 0 0    10
+0016    0 0 0 0 1 1 1 1    0F
+0024    1 1 1 1 1 1 1 1    FF
+0032    1 0 0 0 1 0 1 0    8A
+0040    0 0 0 0 0 0 0 0    00
+0048    0 0 0 0 0 0 0 0    00
+        - - - - - - - -
+0488    0 0 0 0 0 0 0 0    00
+0496    - - - - 0 0 0 0    00
+                         ____
+         Fuse checksum   021A
+
+DEVICE TESTING FIELDS
+
+Syntax and Overview
+
+Functional test information is specified by test vectors containing test 
+conditions for each device pin. 
+
+Syntax of Functional Test Information:
+
+<function test>  ::= [<default test condition>]
+                     [<pin list>] <test vector>
+                     {<test vector>}
+
+<default test condition> ::=  'X' <binary digit> '*'
+
+<pin list> ::= 'P' <pin number>:N '*'
+
+<pin number> ::= <delimiter> <number>
+
+N ::= number of pins on device
+
+<test vector> ::= 'V'  <number> <delimiter> 
+                   <test condition>:N '*'
+
+<test condition> ::= <digit>    |'B' |'C' |'F' |'H' |'K' |
+                            'L' |'N' |'P' |'X' |'Z'
+
+<reserved condition>> ::=   'A' |'D' |'E' |'G' |'I' |'J' |
+                            'M' |'O' |'Q' |'R' |'S' |'T' |
+                            'U' |'V' |'W' |'Y' |'Z'
+
+Test Conditions
+
+0-   Drive input low
+1-   Drive input high
+2-   9-Drive input to super voltage 2-9
+B-   Buried register preload
+C-   Drive input low, high, low
+F-   Float input or output
+H-   Test output high
+K-   Drive input high, low, high
+L-   Test output low
+N-   Power pins and outputs not tested
+P-   Preload registers
+X-   Output not tested, input default level
+Z-   Test input or output for high impedance
+
+Default Test Condition Field (X)
+
+The X field defines the input logic level for test vectors not explicitly 
+defined for the "don't care" test condition. The X field will set test vectors 
+1 through the maximum (set by QV) to the default input test condition. If the 
+X field is used, it must be specified after the QV and QP fields and before 
+the first test vector.  For example, 
+
+X1*      (Set default test condition to 1)<D>
+
+In the following example vectors 2 and 5 would default to the "don't care" 
+value of 0 and no outputs would be tested for vectors 2 and 5.  For example, 
+
+QV5*
+QP20*
+X0*
+V0001 101010000N0ZLLHHZ11N*
+V0003 111XXXXXXN0ZHHLLZ11N*
+V0004 011XXXXXXN0ZLHLHZ11N*
+
+Test Vectors
+
+Each test vector contains N test conditions where N is the number of pins on 
+the device. The Test Conditions Table (shown above) lists the conditions that 
+can be specified for device pins. 
+
+The V field starts with a decimal vector number, followed by a space, then by 
+a series of test conditions for each pin, and terminated by an asterisk. The 
+vector number may include leading zeros.  For example, 
+
+V0001 000000XXXNXXXHHHLXXN*
+V0002 010000XXXNXXXHHHLXXN*
+V0003 100000XXXNXXXHHHLXXN*
+V0004 110000XXXNXXXHHHLXXN*
+
+The vectors are applied in numerical order to the device being tested. The 
+highest numbered vector to be applied is defined by the QV field. If a vector 
+is not specified during a data transfer, the default value or a vector from a 
+previous transfer will be used. If the same numbered vector is specified more 
+than once, the data in the last vector replaces any data contained in previous 
+vectors with that number. This allows the set of test vectors to be modified 
+or "patched" without transferring the entire set. 
+
+Pin Sequence
+
+The conditions contained in test vectors are applied to the device pins in 
+numerical order from left to right unless specified otherwise with the P 
+field. (The left most condition is applied to pin 1, and the right most 
+condition is applied to pin 20 of a 20 pin device, for example. If the timing 
+sequence is not defined, a test condition may be applied to pin 5 before or 
+after pin 4.) The P field indicates an alternative correspondence between the 
+test conditions and the pin numbers.  For example, 
+
+P 1 2 3 4 5 6 14 15 16 17 7 8 9 10 11 12 13 18 19 20*
+
+V0001 111000HLHHNNNNNNNNNN*
+V0002 100000HHHLNNNNNNNNNN*
+
+Vector 1 will apply 111000 to pins 1 through 6 and HLHH to pins 14 through 17. 
+Pins 7 through 13 and 18 through 20 are not tested (N). 
+
+Test Conditions
+
+The test condition logic levels are defined by the device technology (for 
+example TTL, CMOS, ECL). The 0 and 1 test conditions apply a steady state 
+logic level to the device pin. The device tester should allow the applied 
+input conditions to be overridden by bidirectional (input/output) device pins. 
+The X or "don't care" test condition applies the default level defined by the 
+X field. The F test condition applies a high impedance to the device pin. 
+
+The sequence that the input conditions are applied to the device is not 
+defined, so multiple vectors should be used when the sequence is important. 
+The following example ensures that pin 4 transitions to a logic level 1 before 
+pin 3. 
+
+V01 XX00XXXXXNXXXXXXXXXN*
+V02 XX01XXXXXNXXXXXXXXXN*
+V03 XX11XXXXXNXXXXXXXXXN*
+
+The test conditions 2 through 9 apply a non-standard or super voltage to the 
+device. This may be used to access special test modes. The levels are defined 
+for each device and test vectors utilizing super voltages could damage "second 
+source" devices. 
+
+The C test condition applies a logic level 0 until all other inputs are stable 
+(and device timing specifications are met) then switches to a logic level 1 
+and returns to a logic level 0 before the outputs are tested. The K test 
+condition goes from 1 to 0 to 1 in a similar manner. For devices more than one 
+clock input, multiple test vectors should be used to ensure the proper 
+clocking sequence. The N test condition is used for power pins and other 
+outputs not tested. 
+
+After all inputs have stabilized, including clock, the output tests are 
+performed. The L test for a logic level 0 and the H test for a logic level 1. 
+
+The Z test condition tests that an output is in a high impedance condition. 
+
+REGISTER PRELOAD
+
+Register Preload means forcing or "jam loading" a register to a known state. 
+Three types of register preloading, "in- circuit," "output register," and 
+"buried register" are defined. The "in-circuit" preload is accomplished with 
+dedicated input pins or internal control logic and uses normal in-circuit 
+logic levels. The standard input and clock test conditions may be used to 
+preload the registers in these devices. The "output register" and "buried 
+register" preload use non-standard levels or "super voltages" to access 
+special modes to preload the registers. 
+
+Because super voltages are unique for each device, the following generic 
+methods will allow one set of test vectors to work with "second source" 
+devices. The device programmer/tester will apply the specific super voltage 
+algorithm for each device type. 
+
+The "output register" method is used for devices with registers connected to 
+device pins. A P test condition is used to "jam load" registers to a desired 
+state. When the P test condition is applied to the clock pin, the logic level 
+on the register output pin is loaded into the register according to the logic 
+configuration of the device. During preload certain device pins may have to be 
+in a defined state, such as an output enable control pin. 
+
+For devices with separate banks of registers, the P test condition is applied 
+to the each clock pin. For example, if pin 1 clocks bank A and pin 2 clocks 
+bank B, a P on pin 2 would preload bank B. 
+
+The 0 and 1 input conditions should be used instead of the L and H output test 
+conditions. If the preload must be verified, use a separate test vector to 
+test the outputs. 
+
+For example, (16R4 type programmable array logic device)
+
+V1 PXXXXXXXXN1XX1101XXN*   Preload 
+V2 0XXXXXXXXN0XXHHLHXXN*   Test (don't clock)
+V3 CXXXXXXXXN0XXHLHLXXN*   Next State
+
+The "buried register" method can be used for devices with internal registers 
+not connected to device pins. This may also be used for registers connected to 
+device pins. The preload test vector has a B in the first position followed by 
+a single digit, then followed by the register states and terminated with an 
+asterisk. The preload test vector is the same length as the other test vectors 
+and the unused positions are filled with don't cares. The device registers to 
+be preloaded are assigned an index number starting at 1. 
+
+<test vector>::='V' <number> <delimiter>
+                'B' <digit> <test conditions>:N-2 '*'
+
+In the following example a 20 pin device with 6 buried registers is preloaded 
+to "110100." 
+
+V27 B0110100XXXXXXXXXXXX* (preload vector)
+V28 010101001N0XXHHLLXXN* (normal vector)
+
+The digit in the second position of the preload test vector is used to allow 
+more registers than pins. A 20 pin device with 30 registers would require two 
+preload vectors. 
+
+V05 B0110100101010101010* (preload first 18)
+V06 B111010010001XXXXXXX* (preload next 12)
+
+The H and L test conditions can be used to verify the state of the buried 
+registers. 
+
+PROGRAMMER/TEST OPTIONS
+
+Security Fuse (G)
+
+The security fuse(s) of certain logic devices may be enabled for programming 
+by sending a 1 in the G field. The security fuse prevents the reading of the 
+fuse states. Syntax for the Security Fuse field: 
+
+<security fuse> ::= 'G' <binary-digit> '*'
+
+For example,
+
+G1*      (Enable security fuse programming)
+
+Signature Analysis Test (S, R, T)
+
+Signature Analysis tests are specified by the S, R, and T fields. The S field 
+defines the starting vector for the test. The possible states are 0 and 1. The 
+R field contains the resulting vector or test-sum. The T field denotes the 
+number of test cycles to be run. 
+
+Syntax for Signature Analysis Test:
+
+   <starting vector> ::= 'S' <test condition>:N '*'
+   <resulting vector> ::= 'R' <hex-digit>:8 '*'
+   <test cycles> ::= 'T' <number> '*'
+
+   N ::= number of pins on device
+
+For example,
+
+S010001000011100011110110*
+R5BCD34A7*
+T01*
+
+Access Time (A)
+
+The A field defines the propagation delay for test vectors in one nanosecond 
+increments. This field may include optional subfields. 
+
+Syntax for Access Time:
+
+<access time> ::= 'A'{<field characters>} <number> '*'
+
+For example,
+
+A25*
+APD25*
+
+EXAMPLES
+
+Data File Examples
+
+Example 1
+
+Minimum file for device programmer as defined Jedec Standard No. 3, October 
+1983. 
+
+   <STX>
+   *
+   L0000
+   11111011111111111111111111111011111111111111111111111111
+   11101111111111111111111111110000000000000000000000000000
+   01010111011110111111111111110000000000000000000000000000
+   00000000000000000000000000000000000000000000000000000000
+   01010111101110111111111111110000000000000000000000000000
+   00000000000000000000000000000000000000000000000000000000
+   01010111011101111111111111110000000000000000000000000000
+   00000000000000000000000000000000000000000000000000000000*
+   <ETX>5718
+
+Example 2
+
+Data file for device programming.
+
+   File for PLD 12S8 Created on 8-Feb-85 3:05PM
+   6809 memory decode 123-0017-001
+   Joe Engineer    Advanced Logic Corp *
+   QF0448*
+   F0*
+   L00 01111101111111111111111111111*
+   L028 1011111111111111111111111111*
+   L056 1110111111111111111111111111*
+   L112 0101011101111011111111111111*
+   L224 0101011110111011111111111111*
+   L336 0101011101110111111111111111*
+   C124E*
+
+Example 3
+
+Data file for device testing.
+
+   File for PLD 12S8 Created on 8-Feb-85 3:05PM
+   6809 memory decode 123-0017-001
+   Joe Engineer Advanced Logic Corp *
+   QP20* QV8*
+   V0001 000000XXXNXXXHHHLXXN*
+   V0002 010000XXXNXXXHHHLXXN*
+   V0003 100000XXXNXXXHHHLXXN*
+   V0004 110000XXXNXXXHHHLXXN*
+   V0005 111000XXXNXXXHLHHXXN*
+   V0006 111010XXXNXXXHHHHXXN*
+   V0007 111100XXXNXXXHHLHXXN*
+   V0008 111110XXXNXXXLHHHXXN*
+
+Example 4
+
+Data file for programming and testing with options.
+
+   File for PLD 12S8 Created on 8-Feb-85 3:05PM 
+   6809 memory decode 123-0017-001
+   Joe Engineer   Advanced Logic Corp * 
+   QP20*    N Number of pins* 
+   QF0448*  N Number of fuses* 
+   QV8*     N Number of vectors* 
+   G1*      N Program security fuse* 
+   F0*      N Default fuse state* 
+   X0*      N Default test condition*
+
+   N Fuse RAM Data* 
+   L0000 
+   1111101111111111111111111111
+   1011111111111111111111111111
+   1110111111111111111111111111*
+   L0112
+   0101011101111011111111111111*
+   L0224
+   0101011110111011111111111111*
+   L0336
+   0101011101110111111111111111*
+   N Test Vectors*
+   V0001 000000XXXNXXXHHHLXXN*
+   V0002 010000XXXNXXXHHHLXXN*
+   V0003 100000XXXNXXXHHHLXXN*
+   V0004 110000XXXNXXXHHHLXXN*
+   V0005 111000XXXNXXXHLHHXXN*
+   V0006 111010XXXNXXXHHHHXXN*
+   V0007 111100XXXNXXXHHLHXXN*
+   V0008 111110XXXNXXXLHHHXXN*
+   N Fuse RAM checksum* 
+   C124E*
+   N Signature Analysis test information*
+   T01* 
+   S00000000000000000000*
+   R95E4B822*
+
+Example 5
+
+Data file showing position independence of fields.
+
+   File for PLD 12S8 Created on 8-Feb-85 3:05PM
+   6809 memory decode 123-0017-001   
+   Joe Engineer  Advanced Logic Corp * 
+   QP20* 
+   QF448* QV8* F0* 
+   V1 000000000N000HHHL00N*
+   V2 010000000N000HHHL00N*
+   V3 100000000N000HHHL00N*
+   V4 110000000N000HHHL00N*
+   L0 1111101111111111111111111111*
+   L28 1011111111111111111111111111*
+   L56 1110111111111111111111111111*
+   L84 0000000000000000000000000000*
+   L112 0101011101111011111111111111*
+   L224 0101011110111011111111111111*
+   L336 0101011101110111111111111111*
+   L140 1111111111111111111111111111*
+   L140 0000000000000000000000000000*
+   C124E*
+   V8 111111111N111HHHL11N*
+   V6 111010000N000HHHH00N*
+   V7 111100000N000HHLH00N*
+   V5 111000000N000HLHH00N*
+   V8 111110000N000LHHH00N*
+  
+
+
