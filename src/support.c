@@ -46,8 +46,8 @@ char *GetBaseName(char *filename)
 
 	if((p = (char *)malloc(n+5)))
 	{
-		strncpy(p, filename, n); 
-		p[n+4] = '\0';
+		strncpy(p, filename, n);
+		strcpy(p+n, ".XXX");
 
 		return(p);
 	}
